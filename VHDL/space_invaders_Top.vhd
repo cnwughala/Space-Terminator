@@ -23,7 +23,7 @@ use ieee.std_logic_1164.all;
 entity space_invaders_Top is
     port(
         clk, reset: in std_logic;
-        btn: in std_logic_vector(3 downto 0);
+        btn: in std_logic_vector(4 downto 0);
         hsync, vsync: out std_logic;
         rgb_top: out std_logic_vector(2 downto 0);
         vga_pixel_tick: out std_logic;
@@ -38,6 +38,9 @@ architecture arch of space_invaders_Top is
     signal rgb_reg, rgb_next: std_logic_vector(2 downto 0);
     signal rgb: std_logic_vector(2 downto 0);
     signal p_tick: std_logic;
+    signal hit_cnt: std_logic_vector(2 downto 0);
+    signal sq_hit_cnter_on: std_logic;
+    signal pong_graph_rgb, hit_cnter_rgb: std_logic_vector(2 downto 0);
     
     begin
 -- instantiate VGA sync
@@ -46,7 +49,15 @@ architecture arch of space_invaders_Top is
 
 -- instantiate pixel generation circuit
         si_grf_st_unit: entity work.space_invaders_Graph
-            port map(clk=>clk, reset=>reset, btn=>btn, video_on=>video_on, pixel_x=>pixel_x, pixel_y=>pixel_y, graph_rgb=>rgb_next);
+            port map(clk=>clk, reset=>reset, btn=>btn,
+            video_on=>video_on, pixel_x=>pixel_x,
+            pixel_y=>pixel_y, hit_cnt=>hit_cnt,
+            graph_rgb=>pong_graph_rgb);
+        
+        counter_disp_unit: entity work.counter_disp(Behavioral)
+            port map(pixel_x=>pixel_x, pixel_y=>pixel_y,
+            hit_cnt=>hit_cnt, sq_hit_cnter_on_output=> sq_hit_cnter_on,
+            graph_rgb=>hit_cnter_rgb);
             
         vga_pixel_tick <= p_tick;
 -- Set the high order bits of the video DAC for each
