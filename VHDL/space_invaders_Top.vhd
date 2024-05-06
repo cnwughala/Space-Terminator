@@ -38,7 +38,7 @@ architecture arch of space_invaders_Top is
     signal rgb_reg, rgb_next: std_logic_vector(2 downto 0);
     signal rgb: std_logic_vector(2 downto 0);
     signal p_tick: std_logic;
-    signal hit_cnt: std_logic_vector(2 downto 0);
+    signal hit_cnt: std_logic_vector(1 downto 0);
     signal sq_hit_cnter_on: std_logic;
     signal pong_graph_rgb, hit_cnter_rgb: std_logic_vector(2 downto 0);
     
@@ -76,8 +76,9 @@ architecture arch of space_invaders_Top is
                 end if;
         end process;
         
+        rgb_next <= hit_cnter_rgb when sq_hit_cnter_on = '1' else pong_graph_rgb;
+        
         rgb <= rgb_reg;
         blank <= video_on;
-        
 end arch;
 

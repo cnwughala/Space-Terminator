@@ -190,11 +190,11 @@ architecture si_arch of space_invaders_Graph is
     constant ASTEROID_1_V_P: unsigned(9 downto 0) := to_unsigned(2,10); 
     constant ASTEROID_1_V_N: unsigned(9 downto 0) := unsigned(to_signed(-2,10)); 
 
-    constant ASTEROID_2_V_P: unsigned(9 downto 0) := to_unsigned(7,10); 
-    constant ASTEROID_2_V_N: unsigned(9 downto 0) := unsigned(to_signed(-7,10)); 
+    constant ASTEROID_2_V_P: unsigned(9 downto 0) := to_unsigned(2,10); 
+    constant ASTEROID_2_V_N: unsigned(9 downto 0) := unsigned(to_signed(-2,10)); 
 
-    constant ASTEROID_3_V_P: unsigned(9 downto 0) := to_unsigned(4,10); 
-    constant ASTEROID_3_V_N: unsigned(9 downto 0) := unsigned(to_signed(-4,10));  
+    constant ASTEROID_3_V_P: unsigned(9 downto 0) := to_unsigned(2,10); 
+    constant ASTEROID_3_V_N: unsigned(9 downto 0) := unsigned(to_signed(-2,10));  
 
    type firing_rom_type is array(0 to 7) of std_logic_vector(0 to 7); 
    constant FIRING_BALL_ROM: firing_rom_type:= ( 
@@ -283,7 +283,10 @@ architecture si_arch of space_invaders_Graph is
                     asteroid_2_x_reg <= (others => '0'); 
                     asteroid_2_y_reg <= (others => '0');
                     asteroid_3_x_reg <= (others => '0'); 
-                    asteroid_3_y_reg <= (others => '0'); 
+                    asteroid_3_y_reg <= (others => '0');
+                    firing_ball_x_reg <= (others => '0'); 
+                    firing_ball_y_reg <= (others => '0'); 
+                    hit_cnter_reg <= (others => '0');                   
                 elsif (clk'event and clk = '1') then
                     ship_x_reg <= ship_x_next;
                     ship_y_reg <= ship_y_next;
@@ -295,15 +298,24 @@ architecture si_arch of space_invaders_Graph is
                     alien2_y_reg <= alien2_y_next;
                     x2_delta_reg <= x2_delta_next;
                     y2_delta_reg <= y2_delta_next;
+                    
+                    asteroid_1_x_reg <= asteroid_1_x_next; 
+                    asteroid_1_y_reg <= asteroid_1_y_next;
+                    asteroid_2_x_reg <= asteroid_2_x_next; 
+                    asteroid_2_y_reg <= asteroid_2_y_next;
+                    asteroid_3_x_reg <= asteroid_3_x_next; 
+                    asteroid_3_y_reg <= asteroid_3_y_next; 
 
-                    asteroid_1_x_delta_reg <= ("0000000100"); 
-                    asteroid_1_y_delta_reg <= ("0000000100"); 
-
-                    asteroid_2_x_delta_reg <= ("0000000100"); 
-                    asteroid_2_y_delta_reg <= ("0000000100"); 
-
-                    asteroid_3_x_delta_reg <= ("0000000100"); 
-                    asteroid_3_y_delta_reg <= ("0000000100"); 
+                    asteroid_1_x_delta_reg <= asteroid_1_x_delta_next; 
+                    asteroid_1_y_delta_reg <= asteroid_1_x_delta_next; 
+                    asteroid_2_x_delta_reg <= asteroid_2_x_delta_next; 
+                    asteroid_2_y_delta_reg <= asteroid_2_y_delta_next; 
+                    asteroid_3_x_delta_reg <= asteroid_3_x_delta_next; 
+                    asteroid_3_y_delta_reg <= asteroid_3_y_delta_next; 
+                    
+                    firing_ball_x_reg <= firing_ball_x_next; 
+                    firing_ball_y_reg <= firing_ball_y_next; 
+                    hit_cnter_reg <= hit_cnter_next;
                 end if;
         end process;
 
@@ -457,21 +469,21 @@ architecture si_arch of space_invaders_Graph is
                 end if;
         end process;
         
+        firing_ball_y_next <= (firing_ball_y_reg + firing_ball_y_delta_reg) when (refr_tick = '1') else firing_ball_y_reg;
         process (firing_ball_x_reg, firing_ball_y_reg, refr_tick, btn, ship_y_reg, ship_x_reg, ship_x_l) 
             begin
                 firing_ball_x_next <= firing_ball_x_reg; 
                 firing_ball_y_next <= firing_ball_y_reg; 
-                
                 if (refr_tick = '1') then 
                     if (btn(4) = '1') then  
-                        firing_ball_x_next <= ship_x_l; 
-                        firing_ball_y_next <= ship_y_t; 
-                    elsif (firing_ball_y_reg > 0) and (firing_ball_y_reg < MAX_Y - 1) then 
-                        firing_ball_y_next <= firing_ball_y_reg - ASTEROID_1_V_P; 
+                        firing_ball_x_next <= ship_x_l + 7; 
+                        firing_ball_y_next <= ship_y_t;
+                    elsif (firing_ball_y_reg < 1) then 
+                        firing_ball_y_delta_next <= (others => '0'); 
                     end if; 
                 end if; 
         end process;
-        -- set coordinates of square firing ball \
+        -- set coordinates of square firing ball 
         
         firing_ball_x_l <= firing_ball_x_reg; 
         firing_ball_y_t <= firing_ball_y_reg; 
@@ -484,6 +496,7 @@ architecture si_arch of space_invaders_Graph is
         firing_rom_bit <= firing_rom_data(to_integer(firing_rom_col));
         sq_firing_ball_on <= '1' when (firing_ball_x_l <= pix_x) and (pix_x <= firing_ball_x_r) and (firing_ball_y_t <= pix_y) and (pix_y <= firing_ball_y_b) else '0';
         firing_ball_on <= '1' when (sq_firing_ball_on = '1') and (firing_rom_bit = '1') else '0';
+        firing_ball_rgb <= "110";
         
    -- set coordinates of square asteroids  
         asteroid_1_x_l <= asteroid_1_x_reg; 
@@ -527,6 +540,55 @@ architecture si_arch of space_invaders_Graph is
         asteroid_3_on <= '1' when (sq_asteroid_3_on = '1') and (asteroid_3_rom_bit = '1') else '0';
 
         asteroid3_rgb <= "110"; -- orange
+        
+        asteroid_1_x_next <= (asteroid_1_x_reg + asteroid_1_x_delta_reg) when (refr_tick = '1') else asteroid_1_x_reg;
+        asteroid_1_y_next <= (asteroid_1_y_reg + asteroid_1_y_delta_reg) when (refr_tick = '1') else asteroid_1_y_reg;
+        asteroid_2_x_next <= (asteroid_2_x_reg + asteroid_2_x_delta_reg) when (refr_tick = '1') else asteroid_2_x_reg;
+        asteroid_2_y_next <= (asteroid_2_y_reg + asteroid_2_y_delta_reg) when (refr_tick = '1') else asteroid_2_y_reg;
+        asteroid_3_x_next <= (asteroid_3_x_reg + asteroid_3_x_delta_reg) when (refr_tick = '1') else asteroid_3_x_reg;
+        asteroid_3_y_next <= (asteroid_3_y_reg + asteroid_3_y_delta_reg) when (refr_tick = '1') else asteroid_3_y_reg;
+        
+        process(asteroid_1_x_delta_reg, asteroid_1_y_delta_reg, asteroid_1_x_l, asteroid_1_y_t, asteroid_1_x_r, asteroid_1_y_b, ship_y_t, ship_y_b, ship_x_r, ship_x_l) 
+            begin 
+                asteroid_1_x_delta_next <= asteroid_1_x_delta_reg; 
+                asteroid_1_y_delta_next <= asteroid_1_y_delta_reg; 
+                
+                if asteroid_1_y_t < 1 then 
+                    asteroid_1_y_delta_next <= ASTEROID_1_V_P; 
+                elsif asteroid_1_y_b > (MAX_Y - 1) then 
+                    asteroid_1_y_delta_next <= ASTEROID_1_V_N; 
+                elsif (SHIP_X_L <= asteroid_1_x_r) and (asteroid_1_x_r <= SHIP_X_R) and (ship_y_t <= asteroid_1_y_b) and (ship_y_b <= asteroid_1_y_t) then 
+                    asteroid_1_x_delta_next <= ASTEROID_1_V_N;
+                end if; 
+            end process; 
+            
+        process(asteroid_2_x_delta_reg, asteroid_2_y_delta_reg, asteroid_2_x_l, asteroid_2_x_r, asteroid_2_y_t, asteroid_2_y_b, ship_y_t, ship_y_b, ship_x_r, ship_x_l) 
+           begin 
+               asteroid_2_x_delta_next <= asteroid_2_x_delta_reg; 
+               asteroid_2_y_delta_next <= asteroid_2_y_delta_reg; 
+               if asteroid_2_y_t < 1 then 
+                   asteroid_2_y_delta_next <= ASTEROID_2_V_P; 
+               elsif asteroid_2_y_b > (MAX_Y - 1) then 
+                   asteroid_2_y_delta_next <= ASTEROID_2_V_N; 
+               elsif (SHIP_X_L <= asteroid_2_x_r) and (asteroid_2_x_r <= SHIP_X_R) and (ship_y_t <= asteroid_2_y_b) and (ship_y_b <= asteroid_2_y_t) then 
+                   asteroid_2_x_delta_next <= ASTEROID_2_V_N; 
+               end if; 
+        end process; 
+
+ 
+
+        process(asteroid_3_x_delta_reg, asteroid_3_y_delta_reg, asteroid_3_x_l, asteroid_3_y_t, asteroid_3_x_r, asteroid_3_y_b, ship_y_t, ship_y_b, ship_x_l, ship_x_r) 
+            begin 
+                asteroid_3_x_delta_next <= asteroid_3_x_delta_reg; 
+                asteroid_3_y_delta_next <= asteroid_3_y_delta_reg; 
+                if asteroid_3_y_t < 1 then 
+                    asteroid_3_y_delta_next <= ASTEROID_3_V_P;
+                elsif asteroid_3_y_b > (MAX_Y - 1) then 
+                    asteroid_3_y_delta_next <= ASTEROID_3_V_N;
+                elsif (SHIP_X_L <= asteroid_3_x_r) and (asteroid_3_x_r <= SHIP_X_R) and (ship_y_t <= asteroid_3_y_b) and (ship_y_b <= asteroid_3_y_t) then 
+                    asteroid_3_x_delta_next <= ASTEROID_3_V_N; 
+                end if; 
+        end process; 
         
 -- map coordinates of firing ball  
         firing_rom_addr <= pix_y(2 downto 0) - firing_ball_y_t(2 downto 0); 
